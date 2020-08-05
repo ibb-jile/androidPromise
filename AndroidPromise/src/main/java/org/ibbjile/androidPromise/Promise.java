@@ -120,23 +120,14 @@ public class Promise<T> {
         this.setState(PromiseState.Initialized);
     }
 
-    private void run(Object T_PREV) {
+    private void run(Object resultFromPrev) {
         this.setState(PromiseState.Running);
         if (this.thenCallback != null) {
             if (this.thenCallback instanceof VoidCallback) {
-                ((VoidCallback) this.thenCallback).run(T_PREV, this);
+                ((VoidCallback) this.thenCallback).run(resultFromPrev, this);
             } else if (this.thenCallback instanceof ThenCallback) {
-                ((ThenCallback) this.thenCallback).run(T_PREV, this);
-            } else if (this.thenCallback instanceof ThenCallbackWithoutPromise) {
-                try {
-                    ((ThenCallbackWithoutPromise) this.thenCallback).run(T_PREV);
-                } catch (Exception e) {
-                    this.reject(e);
-                }
-            }
-            if (this.thenCallback instanceof StartCallback) {
-                this.setState(PromiseState.Initialized);
-                this.setState(PromiseState.Running);
+                ((ThenCallback) this.thenCallback).run(resultFromPrev, this);
+            } else if (this.thenCallback instanceof StartCallback) {
                 ((StartCallback) this.thenCallback).run(this);
             }
         }
