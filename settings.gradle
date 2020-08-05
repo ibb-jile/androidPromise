@@ -1,0 +1,3 @@
+include ':AndroidPromise'
+include ':app'
+rootProject.name = "AndroidPromise"
