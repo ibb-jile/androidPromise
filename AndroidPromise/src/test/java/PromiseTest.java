@@ -1,5 +1,8 @@
 import org.ibbjile.androidPromise.Promise;
 import org.ibbjile.androidPromise.ThenCallback;
+import org.ibbjile.androidPromise.ThenCallbackWithoutPromise;
+import org.ibbjile.androidPromise.VoidCallback;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,7 +19,9 @@ public class PromiseTest {
         final CompletableFuture<String> future = new CompletableFuture<>();
 
         Promise.resolveIt("Hello")
-                .done(value -> {future.complete(value);});
+                .done(value -> {
+                    future.complete(value);
+                });
 
         assertEquals("Hello", future.get(1, TimeUnit.SECONDS));
     }
@@ -102,7 +107,7 @@ public class PromiseTest {
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result + "aaaaaaaaaaaa")
                 .done((result, p) -> p.reject(new Exception("ouu")))
-                .then((String result) ->(result + "bbbbbbbbbbbbbbbbbbbbbb").length())
+                .then((String result) -> (result + "bbbbbbbbbbbbbbbbbbbbbb").length())
                 .done((Integer result) -> future.cancel(true))
                 .fail(future::complete);
 
@@ -133,7 +138,7 @@ public class PromiseTest {
 
         final Promise[] delayedPromise = new Promise[1];
 
-        Promise<String> promise2 = new Promise<>((ThenCallback<Integer,String>)(s, p) -> {
+        Promise<String> promise2 = new Promise<>((ThenCallback<Integer, String>) (s, p) -> {
             p.resolve(s + "-promise2");
         });
 
@@ -146,5 +151,29 @@ public class PromiseTest {
         delayedPromise[0].resolve("hey");
 
         assertEquals("3-promise2", future.get(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void all() {
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+        Promise p1 = new Promise((VoidCallback) (result, promise) -> {
+        });
+        Promise p2 = new Promise((VoidCallback) (result, promise) -> {
+        });
+        Promise p3 = new Promise((VoidCallback) (result, promise) -> {
+        });
+
+
+        Promise.all(new Promise[]{p1,p2,p3}).done((Void)->future.complete(true));
+
+        Assert.assertFalse(future.isDone());
+        p1.resolve(1);
+        Assert.assertFalse(future.isDone());
+        p2.resolve(2);
+        Assert.assertFalse(future.isDone());
+        p3.resolve(3);
+
+        Assert.assertTrue(future.isDone());
+
     }
 }

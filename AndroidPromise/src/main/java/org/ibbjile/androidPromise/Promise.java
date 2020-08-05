@@ -15,6 +15,27 @@ public class Promise<T> {
         });
     }
 
+    public static Promise<Void> all(Promise[] promises) {
+        VoidCallback checkFinishedPromisesCallback = (result, promise) -> {
+            boolean done = true;
+            for (Promise pp : promises) {
+                if (pp.state != PromiseState.Finished) {
+                    done = false;
+                    break;
+                }
+            }
+            if (done) {
+                promise.resolve(null);
+            }
+        };
+
+        return new Promise<>(promise -> {
+            for (Promise p : promises) {
+                p.done(checkFinishedPromisesCallback);
+            }
+        });
+    }
+
     public Promise(StartCallback<T> callback) {
         this.init(callback);
         this.run(null);
