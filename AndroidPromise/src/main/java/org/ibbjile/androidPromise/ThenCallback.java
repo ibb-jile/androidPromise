@@ -1,6 +1,6 @@
 package org.ibbjile.androidPromise;
 
-public  interface ThenCallback<IN, OUT> {
-    void run(IN result, Promise<IN, OUT> promise);
+public  interface ThenCallback<T_PREV, T_NEW> extends PromiseCallback {
+    void run(T_PREV result, Promise<T_NEW> promise);
 }
 

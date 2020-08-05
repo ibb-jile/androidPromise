@@ -1,5 +1,5 @@
-package org.ibbjile.androidPromise;
-
+import org.ibbjile.androidPromise.Promise;
+import org.ibbjile.androidPromise.ThenCallback;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -12,28 +12,41 @@ import static org.junit.Assert.assertTrue;
 
 public class PromiseTest {
     @Test
-    public void simplePromise() throws InterruptedException, ExecutionException, TimeoutException {
+    public void justResolve() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<String> future = new CompletableFuture<>();
 
-        Promise.resolveIt("Hello").then(future::complete);
+        Promise.resolveIt("Hello")
+                .done(value -> {future.complete(value);});
 
         assertEquals("Hello", future.get(1, TimeUnit.SECONDS));
     }
 
     @Test
-    public void chainPromise() throws InterruptedException, ExecutionException, TimeoutException {
-        final CompletableFuture<String> future = new CompletableFuture<>();
+    public void chainingPromise() throws InterruptedException, ExecutionException, TimeoutException {
+        CompletableFuture<String> future = new CompletableFuture<>();
 
+        Promise<String> promise = Promise.resolveIt("hello")
+                .then((result) -> result + "_world")
+                .then((result) -> result + "_people")
+                .then((result) -> result + ":" + result.length());
 
-        Promise.resolveIt("hello")
-                .then((String result) -> {
-                    System.out.println(result);
-                    return result + "_world";
-                })
-                .then((String result) -> result + ":" + result.length())
-                .then(future::complete);
+        promise.done(future::complete);
 
-        assertEquals("hello_world:11", future.get(1, TimeUnit.SECONDS));
+        assertEquals("hello_world_people:18", future.get(1, TimeUnit.SECONDS));
+
+        future = new CompletableFuture<>();
+
+        Promise<String> promise2 = new Promise<>((result) -> result + "_people");
+
+        promise = Promise.resolveIt("hello")
+                .then((result, p) -> p.resolve(result + "_world"))
+                .then(promise2)
+                .then((result) -> result.length())
+                .then((length) -> length.toString());
+
+        promise.done(future::complete);
+
+        assertEquals("18", future.get(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -43,7 +56,7 @@ public class PromiseTest {
         Promise.resolveIt("hello")
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result.length())
-                .then((Integer result) -> future.complete(result));
+                .done((Integer result) -> future.complete(result));
 
         assertEquals((Integer) 7, future.get(1, TimeUnit.SECONDS));
     }
@@ -56,9 +69,9 @@ public class PromiseTest {
 
 
         Promise.resolveIt("hello")
-                .then((String result, Promise<String, String> p) -> delayedPromise[0] = p)
-                .then((String result) -> result.length())
-                .then(future::complete);
+                .done((result, p) -> delayedPromise[0] = p)
+                .then((result) -> result.length())
+                .done(future::complete);
 
         delayedPromise[0].resolve("hey");
 
@@ -72,8 +85,8 @@ public class PromiseTest {
         final Promise[] delayedPromise = new Promise[1];
 
         Promise.resolveIt("hello")
-                .then((String result, Promise<String, String> p) -> delayedPromise[0] = p)
-                .then((String result) -> result.length())
+                .done((result, p) -> delayedPromise[0] = p)
+                .then((result) -> result.length())
                 .fail(future::complete);
 
         delayedPromise[0].reject(new Exception("ufff"));
@@ -88,9 +101,9 @@ public class PromiseTest {
         Promise.resolveIt("hello")
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result + "aaaaaaaaaaaa")
-                .then((String result, Promise<String, String> p) -> p.reject(new Exception("ouu")))
-                .then((String result, Promise<String, Integer> p) -> p.resolve((result + "bbbbbbbbbbbbbbbbbbbbbb").length()))
-                .then((Integer result) -> future.cancel(true))
+                .done((result, p) -> p.reject(new Exception("ouu")))
+                .then((String result) ->(result + "bbbbbbbbbbbbbbbbbbbbbb").length())
+                .done((Integer result) -> future.cancel(true))
                 .fail(future::complete);
 
         assertTrue(future.get(1, TimeUnit.SECONDS) != null);
@@ -107,8 +120,8 @@ public class PromiseTest {
                     Integer integer = Integer.parseInt(result);
                     return "aaa";
                 })
-                .then((String result, Promise<String, Integer> p) -> p.resolve((result + "bbbbbbbbbbbbbbbbbbbbbb").length()))
-                .then((Integer result) -> future.cancel(true))
+                .then((String result) -> (result + "bbbbbbbbbbbbbbbbbbbbbb").length())
+                .done((Integer result) -> future.cancel(true))
                 .fail(future::complete);
 
         assertTrue(future.get(1, TimeUnit.SECONDS) != null);
@@ -120,12 +133,12 @@ public class PromiseTest {
 
         final Promise[] delayedPromise = new Promise[1];
 
-        Promise<Integer, String> promise2 = new Promise<>((s, p) -> {
+        Promise<String> promise2 = new Promise<>((ThenCallback<Integer,String>)(s, p) -> {
             p.resolve(s + "-promise2");
         });
 
         Promise.resolveIt("hello")
-                .then((String result, Promise<String, String> p) -> delayedPromise[0] = p)
+                .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .then(promise2)
                 .then(future::complete);

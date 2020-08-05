@@ -1,39 +1,55 @@
 package org.ibbjile.androidPromise;
 
-public class Promise<IN, OUT> {
+public class Promise<T> {
 
-    private ThenCallback<IN, OUT> thenCallback;
+    private PromiseCallback thenCallback;
     private ExceptionCallback errorCallback;
-    private OUT result;
+    private T result;
     private Exception exeption;
     private PromiseState state;
     private Promise child;
 
-    public static <OUT> Promise<Void, OUT> resolveIt(OUT value) {
-        return new Promise<>((Promise<Void, OUT> p) -> p.resolve(value));
+    public static <T> Promise<T> resolveIt(T value) {
+        return new Promise<>(promise -> {
+            promise.resolve(value);
+        });
     }
 
-    public Promise(StartCallback<OUT> startCallback) {
-        this.setState(PromiseState.Initialized);
-        this.setState(PromiseState.Running);
-        startCallback.run((Promise<Void, OUT>) this);
+    public Promise(StartCallback<T> startCallback) {
+        this.thenCallback = startCallback;
+        this.run(null);
     }
 
-    public <NEWIN, NEWOUT> Promise(ThenCallback<NEWIN, NEWOUT> thenCallback) {
-        this.thenCallback = (ThenCallback<IN, OUT>) thenCallback;
+    public <T_PREV, T_NEW> Promise(ThenCallback<T_PREV, T_NEW> thenCallback) {
+        this.thenCallback = thenCallback;
     }
 
-    public <NEWOUT> Promise<OUT, NEWOUT> then(ThenCallback<OUT, NEWOUT> continuable) {
-        this.child = new Promise<OUT, NEWOUT>(continuable);
+    public <T_PREV, T_NEW> Promise(ThenCallbackWithoutPromise<T_PREV, T_NEW> thenCallback) {
+        this.thenCallback = (ThenCallback<T_PREV, T_NEW>) (result, promise) -> {
+            try {
+                promise.resolve(thenCallback.run(result));
+            } catch (Exception e) {
+                promise.reject(e);
+            }
+        };
+    }
+
+    public Promise(VoidCallback<T> thenCallback) {
+        this.thenCallback = thenCallback;
+    }
+
+    public Promise<T> done(VoidCallback<T> thenCallback) {
+        this.child = new Promise<>(thenCallback);
         this.continueInChain();
 
         return this.child;
     }
 
-    public <NEWOUT> Promise<OUT, NEWOUT> then(ThenCallbackWithoutPromise<OUT, NEWOUT> continuable) {
-        this.child = new Promise<OUT, NEWOUT>((ThenCallback<OUT, NEWOUT>) (result, promise) -> {
+    public Promise<T> done(VoidCallbackWithoutPromise<T> thenCallback) {
+        this.child = new Promise<>((VoidCallback<T>) (result, promise) -> {
             try {
-                promise.resolve(continuable.run(result));
+                thenCallback.run(result);
+                promise.resolve(result);
             } catch (Exception exception) {
                 promise.reject(exception);
             }
@@ -43,7 +59,27 @@ public class Promise<IN, OUT> {
         return this.child;
     }
 
-    public <NEWOUT> Promise<OUT, NEWOUT> then(Promise<OUT, NEWOUT> newPromise) {
+    public <T_NEW> Promise<T_NEW> then(ThenCallback<T, T_NEW> thenCallback) {
+        this.child = new Promise<T_NEW>(thenCallback);
+        this.continueInChain();
+
+        return this.child;
+    }
+
+    public <T_NEW> Promise<T_NEW> then(ThenCallbackWithoutPromise<T, T_NEW> thenCallback) {
+        this.child = new Promise<T_NEW>((ThenCallback<T, T_NEW>) (result, promise) -> {
+            try {
+                promise.resolve(thenCallback.run(result));
+            } catch (Exception exception) {
+                promise.reject(exception);
+            }
+        });
+        this.continueInChain();
+
+        return this.child;
+    }
+
+    public <T_NEW> Promise<T_NEW> then(Promise<T_NEW> newPromise) {
         this.child = newPromise;
         this.continueInChain();
 
@@ -55,7 +91,7 @@ public class Promise<IN, OUT> {
         this.invokeFail();
     }
 
-    public void resolve(OUT result) {
+    public void resolve(T result) {
         this.result = result;
         this.setState(PromiseState.Finished);
         this.invokeThen();
@@ -79,9 +115,24 @@ public class Promise<IN, OUT> {
         this.invokeFail();
     }
 
-    private void run(IN resultFromPrev) {
+    private void run(Object T_PREV) {
         if (this.thenCallback != null) {
-            this.thenCallback.run(resultFromPrev, this);
+            if (this.thenCallback instanceof VoidCallback) {
+                ((VoidCallback) this.thenCallback).run(T_PREV, this);
+            } else if (this.thenCallback instanceof ThenCallback) {
+                ((ThenCallback) this.thenCallback).run(T_PREV, this);
+            } else if (this.thenCallback instanceof ThenCallbackWithoutPromise) {
+                try {
+                    ((ThenCallbackWithoutPromise) this.thenCallback).run(T_PREV);
+                } catch (Exception e) {
+                    this.reject(e);
+                }
+            }
+            if (this.thenCallback instanceof StartCallback) {
+                this.setState(PromiseState.Initialized);
+                this.setState(PromiseState.Running);
+                ((StartCallback) this.thenCallback).run(this);
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 package org.ibbjile.androidPromise;
 
-public  interface ThenCallbackWithoutPromise<IN, OUT> {
-    OUT run(IN result) throws Exception;
+public interface ThenCallbackWithoutPromise<T_PREV, T_NEW> extends PromiseCallback {
+    T_NEW run(T_PREV result) throws Exception;
 }
