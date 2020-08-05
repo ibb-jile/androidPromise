@@ -15,27 +15,27 @@ public class Promise<T> {
         });
     }
 
-    public Promise(StartCallback<T> startCallback) {
-        this.thenCallback = startCallback;
+    public Promise(StartCallback<T> callback) {
+        this.init(callback);
         this.run(null);
     }
 
-    public <T_PREV, T_NEW> Promise(ThenCallback<T_PREV, T_NEW> thenCallback) {
-        this.thenCallback = thenCallback;
+    public <T_PREV, T_NEW> Promise(ThenCallback<T_PREV, T_NEW> callback) {
+        this.init(callback);
     }
 
     public <T_PREV, T_NEW> Promise(ThenCallbackWithoutPromise<T_PREV, T_NEW> thenCallback) {
-        this.thenCallback = (ThenCallback<T_PREV, T_NEW>) (result, promise) -> {
+        this.init((ThenCallback<T_PREV, T_NEW>) (result, promise) -> {
             try {
                 promise.resolve(thenCallback.run(result));
             } catch (Exception e) {
                 promise.reject(e);
             }
-        };
+        });
     }
 
-    public Promise(VoidCallback<T> thenCallback) {
-        this.thenCallback = thenCallback;
+    public Promise(VoidCallback<T> callback) {
+        this.init(callback);
     }
 
     public Promise<T> done(VoidCallback<T> thenCallback) {
@@ -115,7 +115,13 @@ public class Promise<T> {
         this.invokeFail();
     }
 
+    private void init(PromiseCallback callback) {
+        this.thenCallback = callback;
+        this.setState(PromiseState.Initialized);
+    }
+
     private void run(Object T_PREV) {
+        this.setState(PromiseState.Running);
         if (this.thenCallback != null) {
             if (this.thenCallback instanceof VoidCallback) {
                 ((VoidCallback) this.thenCallback).run(T_PREV, this);
