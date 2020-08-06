@@ -1,4 +1,5 @@
 import org.ibbjile.androidPromise.Promise;
+import org.ibbjile.androidPromise.StartCallback;
 import org.ibbjile.androidPromise.ThenCallback;
 import org.ibbjile.androidPromise.ThenCallbackWithoutPromise;
 import org.ibbjile.androidPromise.VoidCallback;
@@ -24,6 +25,33 @@ public class PromiseTest {
                 });
 
         assertEquals("Hello", future.get(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void catchInResolveIt() throws InterruptedException, ExecutionException, TimeoutException {
+        final CompletableFuture<Exception> future = new CompletableFuture<>();
+
+        Promise.resolveIt((p) -> p.resolve(this.simulateException()))
+                .done(value -> {
+                    future.cancel(true);
+                })
+                .fail((e) -> future.complete(e));
+
+        assertTrue(future.get() instanceof Exception);
+
+        final CompletableFuture<Exception> future1 = new CompletableFuture<>();
+
+        Promise.resolveIt(() -> this.simulateException())
+                .done(value -> {
+                    future1.cancel(true);
+                })
+                .fail((e) -> future1.complete(e));
+
+        assertTrue(future1.get() instanceof Exception);
+    }
+
+    private String simulateException() throws Exception {
+        throw new Exception("test exception");
     }
 
     @Test
@@ -154,7 +182,7 @@ public class PromiseTest {
     }
 
     @Test
-    public void all() {
+    public void all() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<Boolean> future = new CompletableFuture<>();
         Promise p1 = new Promise((VoidCallback) (result, promise) -> {
         });
@@ -164,7 +192,7 @@ public class PromiseTest {
         });
 
 
-        Promise.all(new Promise[]{p1,p2,p3}).done((Void)->future.complete(true));
+        Promise allPromise = Promise.all(new Promise[]{p1, p2, p3}).done((Void) -> future.complete(true));
 
         Assert.assertFalse(future.isDone());
         p1.resolve(1);
@@ -173,6 +201,7 @@ public class PromiseTest {
         Assert.assertFalse(future.isDone());
         p3.resolve(3);
 
+        future.get(5,TimeUnit.SECONDS);
         Assert.assertTrue(future.isDone());
 
     }

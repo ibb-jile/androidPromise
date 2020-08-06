@@ -1,5 +1,5 @@
 package org.ibbjile.androidPromise;
 
 public interface VoidCallbackWithoutPromise<T> {
-    void run(T result);
+    void run(T result) throws Exception;
 }

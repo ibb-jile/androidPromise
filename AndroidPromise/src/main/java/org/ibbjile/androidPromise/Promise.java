@@ -15,23 +15,29 @@ public class Promise<T> {
         });
     }
 
-    public static Promise<Void> all(Promise[] promises) {
-        VoidCallback checkFinishedPromisesCallback = (result, promise) -> {
-            boolean done = true;
-            for (Promise pp : promises) {
-                if (pp.state != PromiseState.Finished) {
-                    done = false;
-                    break;
-                }
-            }
-            if (done) {
-                promise.resolve(null);
-            }
-        };
+    public static <T> Promise<T> resolveIt(StartCallback<T> callback) {
+        return new Promise<>(callback);
+    }
 
+    public static <T> Promise<T> resolveIt(StartCallbackWithoutPromise<T> callback) {
+        return resolveIt(promise -> promise.resolve(callback.run()));
+    }
+
+    public static Promise<Void> all(Promise[] promises) {
         return new Promise<>(promise -> {
             for (Promise p : promises) {
-                p.done(checkFinishedPromisesCallback);
+                p.done((result, ppp) -> {
+                    boolean done = true;
+                    for (Promise pp : promises) {
+                        if (pp.state != PromiseState.Finished) {
+                            done = false;
+                            break;
+                        }
+                    }
+                    if (done) {
+                        promise.resolve(null);
+                    }
+                });
             }
         });
     }
@@ -143,14 +149,18 @@ public class Promise<T> {
 
     private void run(Object resultFromPrev) {
         this.setState(PromiseState.Running);
-        if (this.thenCallback != null) {
-            if (this.thenCallback instanceof VoidCallback) {
-                ((VoidCallback) this.thenCallback).run(resultFromPrev, this);
-            } else if (this.thenCallback instanceof ThenCallback) {
-                ((ThenCallback) this.thenCallback).run(resultFromPrev, this);
-            } else if (this.thenCallback instanceof StartCallback) {
-                ((StartCallback) this.thenCallback).run(this);
+        try {
+            if (this.thenCallback != null) {
+                if (this.thenCallback instanceof VoidCallback) {
+                    ((VoidCallback) this.thenCallback).run(resultFromPrev, this);
+                } else if (this.thenCallback instanceof ThenCallback) {
+                    ((ThenCallback) this.thenCallback).run(resultFromPrev, this);
+                } else if (this.thenCallback instanceof StartCallback) {
+                    ((StartCallback) this.thenCallback).run(this);
+                }
             }
+        } catch (Exception ex) {
+            this.reject(ex);
         }
     }
 
