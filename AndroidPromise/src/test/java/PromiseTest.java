@@ -59,9 +59,9 @@ public class PromiseTest {
         CompletableFuture<String> future = new CompletableFuture<>();
 
         Promise<String> promise = Promise.resolveIt("hello")
-                .then((result) -> result + "_world")
-                .then((result) -> result + "_people")
-                .then((result) -> result + ":" + result.length());
+                .then((String result) -> result + "_world")
+                .then((String result) -> result + "_people")
+                .then((String result) -> result + ":" + result.length());
 
         promise.done(future::complete);
 
@@ -74,8 +74,8 @@ public class PromiseTest {
         promise = Promise.resolveIt("hello")
                 .then((result, p) -> p.resolve(result + "_world"))
                 .then(promise2)
-                .then((result) -> result.length())
-                .then((length) -> length.toString());
+                .then((String result) -> result.length())
+                .then((Integer length) -> length.toString());
 
         promise.done(future::complete);
 
@@ -103,7 +103,7 @@ public class PromiseTest {
 
         Promise.resolveIt("hello")
                 .done((result, p) -> delayedPromise[0] = p)
-                .then((result) -> result.length())
+                .then((String result) -> result.length())
                 .done(future::complete);
 
         delayedPromise[0].resolve("hey");
@@ -119,7 +119,7 @@ public class PromiseTest {
 
         Promise.resolveIt("hello")
                 .done((result, p) -> delayedPromise[0] = p)
-                .then((result) -> result.length())
+                .then((String result) -> result.length())
                 .fail(future::complete);
 
         delayedPromise[0].reject(new Exception("ufff"));
@@ -174,11 +174,18 @@ public class PromiseTest {
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .then(promise2)
+                .then((String res)-> anotherPromise(res))
                 .then(future::complete);
 
         delayedPromise[0].resolve("hey");
 
-        assertEquals("3-promise2", future.get(1, TimeUnit.SECONDS));
+        assertEquals("3-promise2AnotherPromise", future.get(1, TimeUnit.SECONDS));
+    }
+
+    private Promise<String> anotherPromise(String param) {
+        return new Promise<>((p) -> {
+            p.resolve(param + "AnotherPromise");
+        });
     }
 
     @Test
@@ -201,7 +208,7 @@ public class PromiseTest {
         Assert.assertFalse(future.isDone());
         p3.resolve(3);
 
-        future.get(5,TimeUnit.SECONDS);
+        future.get(5, TimeUnit.SECONDS);
         Assert.assertTrue(future.isDone());
 
     }

@@ -86,6 +86,13 @@ public class Promise<T> {
         return this.child;
     }
 
+    public <T_NEW> Promise<T_NEW> then(PromiseInPromiseCallback<T, T_NEW> thenCallback) {
+        this.child = new Promise<T_NEW>((ThenCallback<T, T_NEW>) (result, promise) -> thenCallback.run(result).done((res) -> promise.resolve(res)));
+        this.continueInChain();
+
+        return this.child;
+    }
+
     public <T_NEW> Promise<T_NEW> then(ThenCallback<T, T_NEW> thenCallback) {
         this.child = new Promise<T_NEW>(thenCallback);
         this.continueInChain();
@@ -157,6 +164,8 @@ public class Promise<T> {
                     ((ThenCallback) this.thenCallback).run(resultFromPrev, this);
                 } else if (this.thenCallback instanceof StartCallback) {
                     ((StartCallback) this.thenCallback).run(this);
+                } else if (this.thenCallback instanceof PromiseInPromiseCallback) {
+                    ((PromiseInPromiseCallback) this.thenCallback).run(resultFromPrev);
                 }
             }
         } catch (Exception ex) {
