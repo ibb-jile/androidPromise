@@ -1,5 +1,5 @@
 package org.ibbjile.androidPromise;
 
-public interface ExceptionCallback {
-    void fail(Exception e);
+public interface ExceptionCallback<T extends Throwable> {
+    void fail(T e);
 }

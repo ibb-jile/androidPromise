@@ -1,3 +1,4 @@
+import org.ibbjile.androidPromise.ExceptionCallback;
 import org.ibbjile.androidPromise.Promise;
 import org.ibbjile.androidPromise.StartCallback;
 import org.ibbjile.androidPromise.ThenCallback;
@@ -35,7 +36,7 @@ public class PromiseTest {
                 .done(value -> {
                     future.cancel(true);
                 })
-                .fail((e) -> future.complete(e));
+                .fail(((ExceptionCallback<Exception>) future::complete));
 
         assertTrue(future.get() instanceof Exception);
 
@@ -45,7 +46,7 @@ public class PromiseTest {
                 .done(value -> {
                     future1.cancel(true);
                 })
-                .fail((e) -> future1.complete(e));
+                .fail((e) -> future1.complete((Exception) e));
 
         assertTrue(future1.get() instanceof Exception);
     }
@@ -120,7 +121,7 @@ public class PromiseTest {
         Promise.resolveIt("hello")
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
-                .fail(future::complete);
+                .fail(e -> future.complete((Exception) e));
 
         delayedPromise[0].reject(new Exception("ufff"));
 
@@ -137,7 +138,7 @@ public class PromiseTest {
                 .done((result, p) -> p.reject(new Exception("ouu")))
                 .then((String result) -> (result + "bbbbbbbbbbbbbbbbbbbbbb").length())
                 .done((Integer result) -> future.cancel(true))
-                .fail(future::complete);
+                .fail(e -> future.complete((Exception) e));
 
         assertTrue(future.get(1, TimeUnit.SECONDS) != null);
     }
@@ -155,7 +156,7 @@ public class PromiseTest {
                 })
                 .then((String result) -> (result + "bbbbbbbbbbbbbbbbbbbbbb").length())
                 .done((Integer result) -> future.cancel(true))
-                .fail(future::complete);
+                .fail(e -> future.complete((Exception) e));
 
         assertTrue(future.get(1, TimeUnit.SECONDS) != null);
     }
@@ -174,7 +175,7 @@ public class PromiseTest {
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .then(promise2)
-                .then((String res)-> anotherPromise(res))
+                .then((String res) -> anotherPromise(res))
                 .then(future::complete);
 
         delayedPromise[0].resolve("hey");
