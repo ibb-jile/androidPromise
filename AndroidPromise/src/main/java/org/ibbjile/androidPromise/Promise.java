@@ -120,7 +120,7 @@ public class Promise<T> {
         return this.child;
     }
 
-    public void fail(ExceptionCallback errorCallback) {
+    public <T extends Throwable> void fail(ExceptionCallback<T> errorCallback) {
         this.errorCallback = errorCallback;
         this.invokeFail();
     }

@@ -156,7 +156,7 @@ public class PromiseTest {
                 })
                 .then((String result) -> (result + "bbbbbbbbbbbbbbbbbbbbbb").length())
                 .done((Integer result) -> future.cancel(true))
-                .fail(e -> future.complete((Exception) e));
+                .<Exception>fail(e -> future.complete((Exception) e));
 
         assertTrue(future.get(1, TimeUnit.SECONDS) != null);
     }
