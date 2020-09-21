@@ -9,18 +9,18 @@ public class Promise<T> {
     private PromiseState state;
     private Promise child;
 
-    public static <T> Promise<T> resolveIt(T value) {
+    public static <T> Promise<T> resolveValue(T value) {
         return new Promise<>(promise -> {
             promise.resolve(value);
         });
     }
 
-    public static <T> Promise<T> resolveIt(StartCallback<T> callback) {
+    public static <T> Promise<T> resolveValue(StartCallback<T> callback) {
         return new Promise<>(callback);
     }
 
-    public static <T> Promise<T> resolveIt(StartCallbackWithoutPromise<T> callback) {
-        return resolveIt(promise -> promise.resolve(callback.run()));
+    public static <T> Promise<T> resolveValue(StartCallbackWithoutPromise<T> callback) {
+        return resolveValue(promise -> promise.resolve(callback.run()));
     }
 
     public static Promise<Void> all(Promise[] promises) {

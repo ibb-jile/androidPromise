@@ -1,8 +1,6 @@
 import org.ibbjile.androidPromise.ExceptionCallback;
 import org.ibbjile.androidPromise.Promise;
-import org.ibbjile.androidPromise.StartCallback;
 import org.ibbjile.androidPromise.ThenCallback;
-import org.ibbjile.androidPromise.ThenCallbackWithoutPromise;
 import org.ibbjile.androidPromise.VoidCallback;
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,7 +18,7 @@ public class PromiseTest {
     public void justResolve() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<String> future = new CompletableFuture<>();
 
-        Promise.resolveIt("Hello")
+        Promise.resolveValue("Hello")
                 .done(value -> {
                     future.complete(value);
                 });
@@ -32,7 +30,7 @@ public class PromiseTest {
     public void catchInResolveIt() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<Exception> future = new CompletableFuture<>();
 
-        Promise.resolveIt((p) -> p.resolve(this.simulateException()))
+        Promise.resolveValue((p) -> p.resolve(this.simulateException()))
                 .done(value -> {
                     future.cancel(true);
                 })
@@ -42,7 +40,7 @@ public class PromiseTest {
 
         final CompletableFuture<Exception> future1 = new CompletableFuture<>();
 
-        Promise.resolveIt(() -> this.simulateException())
+        Promise.resolveValue(() -> this.simulateException())
                 .done(value -> {
                     future1.cancel(true);
                 })
@@ -59,7 +57,7 @@ public class PromiseTest {
     public void chainingPromise() throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<String> future = new CompletableFuture<>();
 
-        Promise<String> promise = Promise.resolveIt("hello")
+        Promise<String> promise = Promise.resolveValue("hello")
                 .then((String result) -> result + "_world")
                 .then((String result) -> result + "_people")
                 .then((String result) -> result + ":" + result.length());
@@ -72,7 +70,7 @@ public class PromiseTest {
 
         Promise<String> promise2 = new Promise<>((result) -> result + "_people");
 
-        promise = Promise.resolveIt("hello")
+        promise = Promise.resolveValue("hello")
                 .then((result, p) -> p.resolve(result + "_world"))
                 .then(promise2)
                 .then((String result) -> result.length())
@@ -87,7 +85,7 @@ public class PromiseTest {
     public void changeTypeInChain() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<Integer> future = new CompletableFuture<>();
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result.length())
                 .done((Integer result) -> future.complete(result));
@@ -102,7 +100,7 @@ public class PromiseTest {
         final Promise[] delayedPromise = new Promise[1];
 
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .done(future::complete);
@@ -118,7 +116,7 @@ public class PromiseTest {
 
         final Promise[] delayedPromise = new Promise[1];
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .fail(e -> future.complete((Exception) e));
@@ -132,7 +130,7 @@ public class PromiseTest {
     public void catchErrorWithReject() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<Exception> future = new CompletableFuture<>();
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result + "aaaaaaaaaaaa")
                 .done((result, p) -> p.reject(new Exception("ouu")))
@@ -147,7 +145,7 @@ public class PromiseTest {
     public void catchErrorWithThrow() throws InterruptedException, ExecutionException, TimeoutException {
         final CompletableFuture<Exception> future = new CompletableFuture<>();
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .then((String result) -> result + ":" + result.length())
                 .then((String result) -> result + "aaaaaaaaaaaa")
                 .then((String result) -> {
@@ -171,7 +169,7 @@ public class PromiseTest {
             p.resolve(s + "-promise2");
         });
 
-        Promise.resolveIt("hello")
+        Promise.resolveValue("hello")
                 .done((result, p) -> delayedPromise[0] = p)
                 .then((String result) -> result.length())
                 .then(promise2)
