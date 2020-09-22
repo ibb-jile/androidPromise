@@ -1,7 +1,3 @@
-import org.ibbjile.androidPromise.ExceptionCallback;
-import org.ibbjile.androidPromise.Promise;
-import org.ibbjile.androidPromise.ThenCallback;
-import org.ibbjile.androidPromise.VoidCallback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -9,6 +5,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import androidPromise.ExceptionCallback;
+import androidPromise.Promise;
+import androidPromise.ThenCallback;
+import androidPromise.VoidCallback;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

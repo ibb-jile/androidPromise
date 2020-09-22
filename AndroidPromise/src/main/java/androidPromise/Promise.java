@@ -1,4 +1,4 @@
-package org.ibbjile.androidPromise;
+package androidPromise;
 
 public class Promise<T> {
 
