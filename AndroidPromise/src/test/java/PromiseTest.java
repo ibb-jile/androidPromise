@@ -182,6 +182,34 @@ public class PromiseTest {
         assertEquals("3-promise2AnotherPromise", future.get(1, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void joinNewPromiseToChainAndCatchException() throws InterruptedException, ExecutionException, TimeoutException {
+        final CompletableFuture<Exception> future = new CompletableFuture<>();
+
+        final Promise[] delayedPromise = new Promise[1];
+
+        Promise<String> promise2 = new Promise<>((ThenCallback<Integer, String>) (s, p) -> {
+            p.resolve(s + "-promise2");
+        });
+
+        Promise.resolveValue("hello")
+                .done((result, p) -> delayedPromise[0] = p)
+                .then((String result) -> result.length())
+                .then(promise2)
+                .then((String res) -> anotherFailingPromise(res))
+                .fail(future::complete);
+
+        delayedPromise[0].resolve("hey");
+
+        Assert.assertTrue(future.get(1, TimeUnit.SECONDS) instanceof Exception);
+    }
+
+    private Promise<String> anotherFailingPromise(String param) {
+        return new Promise<>((p) -> {
+            p.reject(new Exception());
+        });
+    }
+
     private Promise<String> anotherPromise(String param) {
         return new Promise<>((p) -> {
             p.resolve(param + "AnotherPromise");

@@ -5,7 +5,7 @@ public class Promise<T> {
     private PromiseCallback thenCallback;
     private ExceptionCallback errorCallback;
     private T result;
-    private Exception exeption;
+    private Throwable exeption;
     private PromiseState state;
     private Promise child;
 
@@ -87,7 +87,12 @@ public class Promise<T> {
     }
 
     public <T_NEW> Promise<T_NEW> then(PromiseInPromiseCallback<T, T_NEW> thenCallback) {
-        this.child = new Promise<T_NEW>((ThenCallback<T, T_NEW>) (result, promise) -> thenCallback.run(result).done((res) -> promise.resolve(res)));
+        this.child = new Promise<T_NEW>(
+                (ThenCallback<T, T_NEW>) (result, promise) ->
+                        thenCallback.run(result)
+                                .done((res) -> promise.resolve(res))
+                                .fail(ex-> promise.reject(ex))
+        );
         this.continueInChain();
 
         return this.child;
@@ -131,7 +136,7 @@ public class Promise<T> {
         this.invokeThen();
     }
 
-    public void reject(Exception exception) {
+    public void reject(Throwable exception) {
         this.exeption = exception;
         this.setState(PromiseState.Failed);
         this.invokeFail();
@@ -143,7 +148,7 @@ public class Promise<T> {
         }
     }
 
-    private void throwException(Exception exeption) {
+    private void throwException(Throwable exeption) {
         this.exeption = exeption;
         this.state = PromiseState.Failed;
         this.invokeFail();
